@@ -4,7 +4,6 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import Optional, List
 import chromadb
-from chromadb.config import Settings
 import os
 import json
 import asyncio
@@ -32,10 +31,7 @@ app.add_middleware(
 )
 
 # Initialize ChromaDB for memory
-chroma_client = chromadb.Client(Settings(
-    chroma_db_impl="duckdb+parquet",
-    persist_directory="/app/chroma_db"
-))
+chroma_client = chromadb.PersistentClient(path="/app/chroma_db")
 
 # Get or create collection for conversation history
 try:
@@ -113,9 +109,11 @@ class RAGAgent:
         await asyncio.sleep(0.1)
         
         if self.provider == "openai" and openai and self.openai_api_key:
-            yield from self._stream_openai(system_prompt, user_message, conversation_id)
+            async for chunk in self._stream_openai(system_prompt, user_message, conversation_id):
+                yield chunk
         elif self.provider == "gemini" and genai and self.gemini_api_key:
-            yield from self._stream_gemini(system_prompt, user_message, conversation_id)
+            async for chunk in self._stream_gemini(system_prompt, user_message, conversation_id):
+                yield chunk
         else:
             yield f"data: {json.dumps({'type': 'error', 'content': f'Provider {self.provider} not configured or available'})}\n\n"
     
