@@ -23,7 +23,7 @@ echo ""
 
 # Check if .env file exists
 if [ ! -f .env ]; then
-    echo "⚠️  .env file not found. Creating from .env.example..."
+    echo "ℹ️  Creating .env file from template..."
     cp .env.example .env
     echo "📝 Please edit .env file and add your API keys:"
     echo "   - OPENAI_API_KEY"

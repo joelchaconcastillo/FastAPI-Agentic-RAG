@@ -7,6 +7,7 @@ import chromadb
 import os
 import json
 import asyncio
+import uuid
 
 # Import provider clients
 try:
@@ -36,7 +37,7 @@ chroma_client = chromadb.PersistentClient(path="/app/chroma_db")
 # Get or create collection for conversation history
 try:
     collection = chroma_client.get_collection(name="conversation_history")
-except:
+except Exception:
     collection = chroma_client.create_collection(name="conversation_history")
 
 
@@ -81,7 +82,6 @@ class RAGAgent:
     def store_message(self, message: str, role: str, conversation_id: str):
         """Store message in ChromaDB for memory"""
         try:
-            import uuid
             doc_id = str(uuid.uuid4())
             collection.add(
                 documents=[message],
@@ -93,6 +93,10 @@ class RAGAgent:
     
     async def generate_streaming_response(self, user_message: str, conversation_id: str):
         """Generate streaming response from the selected provider"""
+        # Send conversation ID first
+        yield f"data: {json.dumps({'type': 'conversation_id', 'content': conversation_id})}\n\n"
+        await asyncio.sleep(0.01)
+        
         # Store user message
         self.store_message(user_message, "user", conversation_id)
         
@@ -186,8 +190,6 @@ async def health():
 @app.post("/chat")
 async def chat(request: ChatRequest):
     """Stream chat responses"""
-    import uuid
-    
     conversation_id = request.conversation_id or str(uuid.uuid4())
     agent = RAGAgent(provider=request.provider)
     

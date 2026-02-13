@@ -64,7 +64,12 @@ function App() {
             try {
               const data = JSON.parse(line.slice(6));
               
-              if (data.type === 'thinking') {
+              if (data.type === 'conversation_id') {
+                // Backend sends conversation ID - save it
+                if (!conversationId) {
+                  setConversationId(data.content);
+                }
+              } else if (data.type === 'thinking') {
                 setThinkingMessage(data.content);
               } else if (data.type === 'token') {
                 setThinkingMessage('');
@@ -105,11 +110,6 @@ function App() {
             }
           }
         }
-      }
-
-      // Generate conversation ID if not exists
-      if (!conversationId) {
-        setConversationId(Date.now().toString());
       }
 
     } catch (error) {
